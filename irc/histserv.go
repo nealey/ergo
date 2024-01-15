@@ -6,6 +6,7 @@ package irc
 import (
 	"bufio"
 	"fmt"
+	"log"
 	"os"
 	"strconv"
 	"time"
@@ -183,7 +184,8 @@ func histservExportAndNotify(service *ircService, server *Server, cfAccount stri
 	writer := bufio.NewWriter(outfile)
 	defer writer.Flush()
 
-	server.historyDB.Export(cfAccount, writer)
+	log.Println("XXX: Reimplement Export here, using MakeSequence")
+	//server.historyDB.Export(cfAccount, writer)
 
 	client := server.clients.Get(alertNick)
 	if client != nil && client.HasRoleCapabs("history") {

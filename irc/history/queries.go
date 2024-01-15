@@ -33,8 +33,7 @@ type Sequence interface {
 
 // This is a bad, slow implementation of CHATHISTORY AROUND using the BETWEEN semantics
 func GenericAround(seq Sequence, start Selector, limit int) (results []Item, err error) {
-	var halfLimit int
-	halfLimit = (limit + 1) / 2
+	halfLimit := int((limit + 1) / 2)
 	initialResults, err := seq.Between(Selector{}, start, halfLimit)
 	if err != nil {
 		return

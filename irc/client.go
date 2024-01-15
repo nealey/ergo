@@ -1669,7 +1669,7 @@ func (client *Client) addHistoryItem(target *Client, item history.Item, details,
 	}
 	if cStatus == HistoryPersistent || tStatus == HistoryPersistent {
 		targetedItem.CfCorrespondent = ""
-		client.server.historyDB.AddDirectMessage(details.nickCasefolded, details.account, tDetails.nickCasefolded, tDetails.account, targetedItem)
+		client.server.history.AddDirectMessage(details.nickCasefolded, details.account, tDetails.nickCasefolded, tDetails.account, targetedItem)
 	}
 	return nil
 }
@@ -1694,7 +1694,7 @@ func (client *Client) listTargets(start, end history.Selector, limit int) (resul
 			chcfnames = append(chcfnames, channel.NameCasefolded())
 		}
 	}
-	persistentExtras, err := client.server.historyDB.ListChannels(chcfnames)
+	persistentExtras, err := client.server.history.ListChannels(chcfnames)
 	if err == nil && len(persistentExtras) != 0 {
 		extras = append(extras, persistentExtras...)
 	}

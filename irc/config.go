@@ -32,6 +32,7 @@ import (
 	"github.com/ergochat/ergo/irc/connection_limits"
 	"github.com/ergochat/ergo/irc/custime"
 	"github.com/ergochat/ergo/irc/email"
+	"github.com/ergochat/ergo/irc/filehistory"
 	"github.com/ergochat/ergo/irc/isupport"
 	"github.com/ergochat/ergo/irc/jwt"
 	"github.com/ergochat/ergo/irc/languages"
@@ -628,6 +629,7 @@ type Config struct {
 		Path        string
 		AutoUpgrade bool
 		MySQL       mysql.Config
+		FileHistory filehistory.Config
 	}
 
 	Accounts AccountConfig
@@ -1501,8 +1503,9 @@ func LoadConfig(filename string) (config *Config, err error) {
 		config.History.Persistent.DirectMessages = PersistentDisabled
 	}
 
-	if config.History.Persistent.Enabled && !config.Datastore.MySQL.Enabled {
-		return nil, fmt.Errorf("You must configure a MySQL server in order to enable persistent history")
+	if config.History.Persistent.Enabled &&
+		!(config.Datastore.MySQL.Enabled || config.Datastore.FileHistory.Enabled) {
+		return nil, fmt.Errorf("You must configure a history backend in order to enable persistent history")
 	}
 
 	if config.History.ZNCMax == 0 {

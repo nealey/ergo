@@ -7,6 +7,7 @@ package irc
 
 import (
 	"fmt"
+	"log"
 	"net"
 	"net/http"
 	_ "net/http/pprof"
@@ -28,6 +29,7 @@ import (
 	"github.com/ergochat/ergo/irc/caps"
 	"github.com/ergochat/ergo/irc/connection_limits"
 	"github.com/ergochat/ergo/irc/datastore"
+	"github.com/ergochat/ergo/irc/filehistory"
 	"github.com/ergochat/ergo/irc/flatip"
 	"github.com/ergochat/ergo/irc/flock"
 	"github.com/ergochat/ergo/irc/history"
@@ -89,7 +91,7 @@ type Server struct {
 	snomasks          SnoManager
 	store             *buntdb.DB
 	dstore            datastore.Datastore
-	historyDB         mysql.MySQL
+	history           history.HistoryInterface
 	torLimiter        connection_limits.TorLimiter
 	whoWas            WhoWasList
 	stats             Stats
@@ -155,7 +157,9 @@ func (server *Server) Shutdown() {
 		server.logger.Error("shutdown", fmt.Sprintln("Could not close datastore:", err))
 	}
 
-	server.historyDB.Close()
+	if err := server.history.Close(); err != nil {
+		server.logger.Warning("server", fmt.Sprintln("history storage close error:", err))
+	}
 	server.logger.Info("server", fmt.Sprintf("%s exiting", Ver))
 }
 
@@ -726,8 +730,9 @@ func (server *Server) applyConfig(config *Config) (err error) {
 		}
 	} else {
 		if config.Datastore.MySQL.Enabled && config.Datastore.MySQL != oldConfig.Datastore.MySQL {
-			server.historyDB.SetConfig(config.Datastore.MySQL)
+			log.Println("XXX: rehash MySQL database, probably by closing and reopening")
 		}
+
 	}
 
 	// now that the datastore is initialized, we can load the cloak secret from it
@@ -875,12 +880,19 @@ func (server *Server) loadFromDatastore(config *Config) (err error) {
 	server.accounts.Initialize(server)
 
 	if config.Datastore.MySQL.Enabled {
-		server.historyDB.Initialize(server.logger, config.Datastore.MySQL)
-		err = server.historyDB.Open()
+		hi, err := mysql.NewMySQLHistory(server.logger, config.Datastore.MySQL)
 		if err != nil {
 			server.logger.Error("internal", "could not connect to mysql", err.Error())
 			return err
 		}
+		server.history = hi
+	}
+	if config.Datastore.FileHistory.Enabled {
+		hi, err := filehistory.NewFileHistory(config.Datastore.FileHistory.Path)
+		if err != nil {
+			server.logger.Error("internal", "could not establish file history", err.Error())
+		}
+		server.history = hi
 	}
 
 	return nil
@@ -1032,7 +1044,7 @@ func (server *Server) GetHistorySequence(providedChannel *Channel, client *Clien
 	if hist != nil {
 		sequence = hist.MakeSequence(correspondent, cutoff)
 	} else if target != "" {
-		sequence = server.historyDB.MakeSequence(target, correspondent, cutoff)
+		sequence = server.history.MakeSequence(target, correspondent, cutoff)
 	}
 	return
 }
@@ -1049,7 +1061,7 @@ func (server *Server) ForgetHistory(accountName string) {
 	}
 
 	if cfAccount, err := CasefoldName(accountName); err == nil {
-		server.historyDB.Forget(cfAccount)
+		server.history.DeleteAllMessages(cfAccount)
 	}
 
 	persistent := config.History.Persistent
@@ -1094,7 +1106,7 @@ func (server *Server) DeleteMessage(target, msgid, accountName string) (err erro
 	}
 
 	if hist == nil {
-		err = server.historyDB.DeleteMsgid(msgid, accountName)
+		err = server.history.DeleteMessage(msgid, accountName)
 	} else {
 		count := hist.Delete(func(item *history.Item) bool {
 			return item.Message.Msgid == msgid && (accountName == "*" || item.AccountName == accountName)
