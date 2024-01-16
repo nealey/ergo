@@ -7,7 +7,6 @@ package irc
 
 import (
 	"fmt"
-	"log"
 	"maps"
 	"strconv"
 	"strings"
@@ -721,7 +720,7 @@ func (channel *Channel) AddHistoryItem(item history.Item, account string) (err e
 
 	status, target, _ := channel.historyStatus(channel.server.Config())
 	if status == HistoryPersistent {
-		err = channel.server.history.AddChannelItem(target, item, account)
+		err = channel.server.history.AddChannelItem(account, target, item)
 	} else if status == HistoryEphemeral {
 		channel.history.Add(item)
 	}

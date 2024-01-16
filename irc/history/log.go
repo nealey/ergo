@@ -17,8 +17,8 @@ func (hi *LogHistory) Close() error {
 }
 
 // AddChannelItem adds a non-message event to history
-func (hi *LogHistory) AddChannelItem(target string, item Item, account string) error {
-	log.Println("AddChannelItem", target, item, account)
+func (hi *LogHistory) AddChannelItem(senderAccount, target string, item Item) error {
+	log.Println("AddChannelItem", senderAccount, target, item)
 	return nil
 }
 

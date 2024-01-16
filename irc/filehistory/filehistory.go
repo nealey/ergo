@@ -32,8 +32,8 @@ func (d *FileHistory) Close() error {
 }
 
 // AddChannelItem adds a non-message event to history
-func (hi *FileHistory) AddChannelItem(target string, item history.Item, account string) error {
-	log.Println("AddChannelItem", target, item, account)
+func (hi *FileHistory) AddChannelItem(senderAccount, target string, item history.Item) error {
+	log.Println("AddChannelItem", senderAccount, target, item)
 	return nil
 }
 

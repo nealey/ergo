@@ -591,7 +591,7 @@ func (mysql *MySQL) Forget(account string) {
 	}
 }
 
-func (mysql *MySQL) AddChannelItem(target string, item history.Item, account string) (err error) {
+func (mysql *MySQL) AddChannelItem(senderAccount, target string, item history.Item) (err error) {
 	if mysql.db == nil {
 		return
 	}
@@ -613,7 +613,7 @@ func (mysql *MySQL) AddChannelItem(target string, item history.Item, account str
 		return
 	}
 
-	err = mysql.insertAccountMessageEntry(ctx, id, account)
+	err = mysql.insertAccountMessageEntry(ctx, id, senderAccount)
 	if err != nil {
 		return
 	}
